@@ -1,0 +1,15 @@
+apiVersion: tekton.dev/v1
+kind: TaskRun
+metadata:
+  name: task-design-demo-run
+spec:
+  taskRef:
+    name: task-design-demo
+
+  params:
+    - name: message
+      value: "Enterprise CI learning"
+
+  workspaces:
+    - name: source
+      emptyDir: {}
