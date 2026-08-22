@@ -1,0 +1,15 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: hello-task
+spec:
+  steps:
+    - name: hello
+      image: registry.access.redhat.com/ubi9/ubi-minimal
+      command:
+        - /bin/bash
+      args:
+        - -c
+        - |
+          echo "Hello from Tekton"
+          echo "Tekton Task is running inside OpenShift"
