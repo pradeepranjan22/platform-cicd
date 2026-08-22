@@ -1,0 +1,18 @@
+apiVersion: tekton.dev/v1
+kind: TaskRun
+metadata:
+  name: git-clone-test
+spec:
+  taskRef:
+    name: git-clone
+
+  params:
+    - name: url
+      value: https://github.com/pradeepranjan22/platform-cicd.git
+
+    - name: revision
+      value: main
+
+  workspaces:
+    - name: output
+      emptyDir: {}
