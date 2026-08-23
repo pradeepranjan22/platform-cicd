@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  name: application-ci-run-04
+  name: application-ci-run-06
 
 spec:
   pipelineRef:
@@ -9,13 +9,10 @@ spec:
 
   params:
     - name: repo-url
-      value: https://github.com/pradeepranjan22/platform-cicd.git
+      value: https://github.com/pradeepranjan22/cicd-sample-java-app.git
 
     - name: revision
       value: main
-
-    - name: project-dir
-      value: applications/sample-java-app
 
     - name: maven-goals
       value: "clean package"

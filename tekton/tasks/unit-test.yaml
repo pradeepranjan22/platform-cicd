@@ -4,13 +4,9 @@ metadata:
   name: unit-test
 
 spec:
-  params:
-    - name: project-dir
-      type: string
-      default: "applications/sample-java-app"
-
   workspaces:
     - name: source
+      description: Workspace containing application source code
 
   steps:
     - name: test
@@ -19,17 +15,6 @@ spec:
       script: |
         #!/bin/sh
         set -eu
-
-        echo "Workspace:"
-        pwd
-
-        echo "Application directory:"
-        echo "$(params.project-dir)"
-
-        cd "$(params.project-dir)"
-
-        echo "Build directory:"
-        pwd
 
         echo "Files:"
         ls -la

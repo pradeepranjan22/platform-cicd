@@ -10,11 +10,6 @@ spec:
       default: "clean package"
       description: Maven goals to execute
 
-    - name: project-dir
-      type: string
-      default: "applications/sample-java-app"
-      description: Relative path of the Maven project inside the workspace
-
   workspaces:
     - name: source
       description: Workspace containing the cloned application source code
@@ -33,17 +28,8 @@ spec:
 
         echo "Workspace:"
         pwd
-
-        echo "Project directory:"
-        echo "$(params.project-dir)"
-
-        echo "Changing to application directory..."
-        cd "$(params.project-dir)"
-
-        echo "Build directory:"
-        pwd
-
-        echo "Application files:"
+        
+        echo " Application files:"
         ls -la
 
         echo "Checking pom.xml..."

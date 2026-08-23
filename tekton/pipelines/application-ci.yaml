@@ -14,11 +14,6 @@ spec:
       default: main
       description: Git revision to build
 
-    - name: project-dir
-      type: string
-      default: "applications/sample-java-app"
-      description: Relative path of the application project
-
     - name: maven-goals
       type: string
       default: "clean package"
@@ -61,9 +56,6 @@ spec:
         - name: goals
           value: $(params.maven-goals)
 
-        - name: project-dir
-          value: $(params.project-dir)
-
       workspaces:
         - name: source
           workspace: shared-workspace
@@ -77,10 +69,6 @@ spec:
 
       taskRef:
         name: unit-test
-
-      params:
-        - name: project-dir
-          value: $(params.project-dir)
 
       workspaces:
         - name: source
