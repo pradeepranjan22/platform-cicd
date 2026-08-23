@@ -2,14 +2,22 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: maven-build
+
 spec:
   params:
     - name: goals
       type: string
       default: "clean package"
+      description: Maven goals to execute
+
+    - name: project-dir
+      type: string
+      default: "applications/sample-java-app"
+      description: Relative path of the Maven project inside the workspace
 
   workspaces:
     - name: source
+      description: Workspace containing the cloned application source code
 
   steps:
     - name: build
@@ -18,4 +26,34 @@ spec:
       script: |
         #!/bin/sh
         set -eu
+
+        echo "========================================"
+        echo "Maven Build"
+        echo "========================================"
+
+        echo "Workspace:"
+        pwd
+
+        echo "Project directory:"
+        echo "$(params.project-dir)"
+
+        echo "Changing to application directory..."
+        cd "$(params.project-dir)"
+
+        echo "Build directory:"
+        pwd
+
+        echo "Application files:"
+        ls -la
+
+        echo "Checking pom.xml..."
+        test -f pom.xml
+
+        echo "Running Maven:"
+        echo "mvn $(params.goals)"
+
         mvn $(params.goals)
+
+        echo "========================================"
+        echo "Maven build completed successfully"
+        echo "========================================"

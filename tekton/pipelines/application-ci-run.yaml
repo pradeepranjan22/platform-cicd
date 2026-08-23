@@ -1,0 +1,31 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: application-ci-run-04
+
+spec:
+  pipelineRef:
+    name: application-ci
+
+  params:
+    - name: repo-url
+      value: https://github.com/pradeepranjan22/platform-cicd.git
+
+    - name: revision
+      value: main
+
+    - name: project-dir
+      value: applications/sample-java-app
+
+    - name: maven-goals
+      value: "clean package"
+
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi

@@ -1,0 +1,87 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: application-ci
+
+spec:
+  params:
+    - name: repo-url
+      type: string
+      description: Git repository URL
+
+    - name: revision
+      type: string
+      default: main
+      description: Git revision to build
+
+    - name: project-dir
+      type: string
+      default: "applications/sample-java-app"
+      description: Relative path of the application project
+
+    - name: maven-goals
+      type: string
+      default: "clean package"
+      description: Maven goals
+
+  workspaces:
+    - name: shared-workspace
+
+  tasks:
+
+    # --------------------------------------------------
+    # 1. Git Clone
+    # --------------------------------------------------
+    - name: clone
+      taskRef:
+        name: git-clone
+
+      params:
+        - name: url
+          value: $(params.repo-url)
+
+        - name: revision
+          value: $(params.revision)
+
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+
+    # --------------------------------------------------
+    # 2. Maven Build
+    # --------------------------------------------------
+    - name: build
+      runAfter:
+        - clone
+
+      taskRef:
+        name: maven-build
+
+      params:
+        - name: goals
+          value: $(params.maven-goals)
+
+        - name: project-dir
+          value: $(params.project-dir)
+
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    # --------------------------------------------------
+    # 3. Unit Test
+    # --------------------------------------------------
+    - name: test
+      runAfter:
+        - build
+
+      taskRef:
+        name: unit-test
+
+      params:
+        - name: project-dir
+          value: $(params.project-dir)
+
+      workspaces:
+        - name: source
+          workspace: shared-workspace
