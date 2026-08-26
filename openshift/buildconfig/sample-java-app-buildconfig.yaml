@@ -1,0 +1,24 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+
+metadata:
+  name: sample-java-app
+
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/pradeepranjan22/cicd-sample-java-app.git
+      ref: main
+
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+
+  output:
+    to:
+      kind: DockerImage
+      name: docker.io/pradeepranjan22/sample-java-app:latest
+    pushSecret:
+      name: dockerhub-secret
