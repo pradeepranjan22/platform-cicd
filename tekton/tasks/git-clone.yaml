@@ -2,7 +2,6 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: git-clone
-
 spec:
   params:
     - name: url
@@ -12,19 +11,22 @@ spec:
     - name: revision
       type: string
       default: main
-      description: Git revision to checkout
+      description: Git branch or Git reference to checkout
+
+  results:
+    - name: commit
+      type: string
+      description: Git commit SHA checked out by this Task
 
   workspaces:
     - name: output
       description: Workspace where the repository will be cloned
 
-  results:
-    - name: commit
-      description: Git commit SHA checked out by this Task
-
   steps:
     - name: clone
       image: alpine/git:2.47.2
+      workingDir: $(workspaces.output.path)
+
       script: |
         #!/bin/sh
         set -eu
@@ -33,20 +35,61 @@ spec:
         echo "Git Clone"
         echo "========================================"
 
-        rm -rf $(workspaces.output.path)/*
+        echo "Repository:"
+        echo "$(params.url)"
+
+        echo "Requested revision:"
+        echo "$(params.revision)"
+
+        REVISION="$(params.revision)"
+
+        # Convert GitHub webhook reference:
+        # refs/heads/main
+        # into:
+        # main
+        case "$REVISION" in
+          refs/heads/*)
+            REVISION="${REVISION#refs/heads/}"
+            ;;
+        esac
+
+        echo "Normalized revision:"
+        echo "$REVISION"
+
+        echo "Cleaning workspace..."
+
+        rm -rf "$(workspaces.output.path)"/* \
+               "$(workspaces.output.path)"/.[!.]* \
+               "$(workspaces.output.path)"/..?*
+
+        echo "Cloning repository..."
 
         git clone \
-          --branch "$(params.revision)" \
+          --branch "$REVISION" \
           "$(params.url)" \
           "$(workspaces.output.path)"
 
         cd "$(workspaces.output.path)"
 
-        COMMIT=$(git rev-parse HEAD)
+        echo "========================================"
+        echo "Clone completed"
+        echo "========================================"
+
+        COMMIT="$(git rev-parse HEAD)"
 
         echo "Checked out commit:"
         echo "$COMMIT"
 
+        echo "Checked out branch:"
+        git branch --show-current
+
+        echo "Repository files:"
+        ls -la
+
+        # Publish commit SHA as Tekton Task result
         printf "%s" "$COMMIT" > "$(results.commit.path)"
 
-        echo "Git commit result stored successfully."
+        echo "========================================"
+        echo "Tekton result 'commit' published"
+        echo "========================================"
+        echo "$COMMIT"

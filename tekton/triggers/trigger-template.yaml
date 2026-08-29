@@ -1,0 +1,44 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: application-ci-template
+  namespace: pradeepranjan18-dev
+spec:
+  params:
+    - name: repo-url
+      description: Git repository URL
+
+    - name: revision
+      description: Git revision
+
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1
+      kind: PipelineRun
+      metadata:
+        generateName: application-ci-run-
+      spec:
+        pipelineRef:
+          name: application-ci
+
+        params:
+          - name: repo-url
+            value: $(tt.params.repo-url)
+
+          - name: revision
+            value: $(tt.params.revision)
+
+          - name: maven-goals
+            value: "clean package"
+
+          - name: image-repository
+            value: docker.io/pradeepranjan22/cicd-sample-java-app
+
+        workspaces:
+          - name: shared-workspace
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 1Gi
