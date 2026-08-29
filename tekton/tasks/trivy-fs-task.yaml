@@ -1,0 +1,30 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: trivy-fs-scan
+spec:
+  params:
+    - name: severity
+      type: string
+      default: HIGH,CRITICAL
+  workspaces:
+    - name: source
+  steps:
+    - name: scan
+      image: aquasec/trivy:latest
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/sh
+        set -eu
+
+        echo "========================================"
+        echo "Trivy Filesystem / SCA Scan"
+        echo "========================================"
+
+        trivy fs \
+          --scanners vuln \
+          --severity "$(params.severity)" \
+          --exit-code 1 \
+          .
+
+        echo "Trivy SCA scan passed"

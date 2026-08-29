@@ -7,20 +7,25 @@ spec:
     - name: repo-url
       type: string
       description: Git repository URL
-
     - name: revision
       type: string
       default: main
-      description: Git revision to build
-
+      description: Git revision
     - name: maven-goals
       type: string
-      default: "clean package"
-      description: Maven goals
-
+      default: clean package
     - name: image-repository
       type: string
-      description: Target container image repository
+      description: Target image repository
+    - name: sonar-project-key
+      type: string
+      description: SonarQube project key
+    - name: sonar-host-url
+      type: string
+      default: https://sonarcloud.io
+    - name: sonar-organization
+      type: string
+      default: ""
 
   workspaces:
     - name: shared-workspace
@@ -38,9 +43,45 @@ spec:
         - name: output
           workspace: shared-workspace
 
-    - name: build
+    - name: code-quality
       runAfter:
         - clone
+      taskRef:
+        name: sonarqube-analysis
+      params:
+        - name: project-key
+          value: $(params.sonar-project-key)
+        - name: host-url
+          value: $(params.sonar-host-url)
+        - name: organization
+          value: $(params.sonar-organization)
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: dependency-scan
+      runAfter:
+        - clone
+      taskRef:
+        name: trivy-fs-scan
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: secret-scan
+      runAfter:
+        - clone
+      taskRef:
+        name: trivy-secret-scan
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: build
+      runAfter:
+        - code-quality
+        - dependency-scan
+        - secret-scan
       taskRef:
         name: maven-build
       params:
@@ -62,20 +103,24 @@ spec:
     - name: build-image
       runAfter:
         - test
-
       taskRef:
         name: kaniko
-
       params:
         - name: image
-          value: "$(params.image-repository):$(tasks.clone.results.commit)"
-
+          value: $(params.image-repository):$(tasks.clone.results.commit)
         - name: dockerfile
-          value: "Dockerfile"
-
+          value: Dockerfile
         - name: context
-          value: "."
-
+          value: .
       workspaces:
         - name: source
           workspace: shared-workspace
+
+    - name: image-scan
+      runAfter:
+        - build-image
+      taskRef:
+        name: trivy-image-scan
+      params:
+        - name: image
+          value: $(params.image-repository):$(tasks.clone.results.commit)

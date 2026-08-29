@@ -1,0 +1,43 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: trivy-image-scan
+  namespace: pradeepranjan18-dev
+spec:
+  params:
+    - name: image
+      type: string
+      description: Container image to scan
+
+  steps:
+    - name: scan
+      image: aquasec/trivy:latest
+      script: |
+        #!/bin/sh
+        set -eu
+
+        echo "========================================"
+        echo "Trivy Container Image Security Scan"
+        echo "========================================"
+
+        echo "Image:"
+        echo "$(params.image)"
+
+        echo "Policy:"
+        echo "FAIL only on CRITICAL vulnerabilities"
+        echo "HIGH vulnerabilities will be reported but will NOT fail the pipeline"
+
+        echo "========================================"
+        echo "Running Trivy..."
+        echo "========================================"
+
+        trivy image \
+          --severity CRITICAL \
+          --exit-code 1 \
+          --no-progress \
+          "$(params.image)"
+
+        echo "========================================"
+        echo "No CRITICAL vulnerabilities found"
+        echo "Image security gate passed"
+        echo "========================================"

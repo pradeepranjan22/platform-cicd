@@ -1,0 +1,66 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: sonarqube-analysis
+spec:
+  params:
+    - name: project-key
+      type: string
+      description: SonarCloud project key
+
+    - name: host-url
+      type: string
+      default: "https://sonarcloud.io"
+
+    - name: organization
+      type: string
+      description: SonarCloud organization
+
+  workspaces:
+    - name: source
+
+  steps:
+    - name: scan
+      image: maven:3.9-eclipse-temurin-21
+
+      env:
+        - name: SONAR_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: sonarqube-cloud-secret
+              key: SONAR_TOKEN
+
+      workingDir: $(workspaces.source.path)
+
+      script: |
+        #!/bin/sh
+        set -eu
+
+        echo "========================================"
+        echo "SonarQube Analysis"
+        echo "========================================"
+
+        echo "Workspace:"
+        pwd
+
+        echo "Checking source..."
+        ls -la
+
+        echo "Checking pom.xml..."
+        test -f pom.xml
+
+        echo "Running SonarCloud analysis..."
+
+        mvn -B verify \
+          org.sonarsource.scanner.maven:sonar-maven-plugin:5.3.0.6276:sonar \
+          -Dsonar.projectKey="$(params.project-key)" \
+          -Dsonar.organization="$(params.organization)" \
+          -Dsonar.host.url="$(params.host-url)" \
+          -Dsonar.token="$SONAR_TOKEN"
+
+        echo "========================================"
+        echo "SonarCloud analysis completed"
+        echo "========================================"
+
+        echo "Quality Gate is monitored separately."
+        echo "Continuing CI pipeline..."
