@@ -2,7 +2,6 @@ apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
   name: application-ci
-
 spec:
   params:
     - name: repo-url
@@ -19,56 +18,63 @@ spec:
       default: "clean package"
       description: Maven goals
 
+    - name: image-repository
+      type: string
+      description: Target container image repository
+
   workspaces:
     - name: shared-workspace
 
   tasks:
-
-    # --------------------------------------------------
-    # 1. Git Clone
-    # --------------------------------------------------
     - name: clone
       taskRef:
         name: git-clone
-
       params:
         - name: url
           value: $(params.repo-url)
-
         - name: revision
           value: $(params.revision)
-
       workspaces:
         - name: output
           workspace: shared-workspace
 
-    # --------------------------------------------------
-    # 2. Maven Build
-    # --------------------------------------------------
     - name: build
       runAfter:
         - clone
-
       taskRef:
         name: maven-build
-
       params:
         - name: goals
           value: $(params.maven-goals)
-
       workspaces:
         - name: source
           workspace: shared-workspace
 
-    # --------------------------------------------------
-    # 3. Unit Test
-    # --------------------------------------------------
     - name: test
       runAfter:
         - build
-
       taskRef:
         name: unit-test
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: build-image
+      runAfter:
+        - test
+
+      taskRef:
+        name: kaniko
+
+      params:
+        - name: image
+          value: "$(params.image-repository):$(tasks.clone.results.commit)"
+
+        - name: dockerfile
+          value: "Dockerfile"
+
+        - name: context
+          value: "."
 
       workspaces:
         - name: source

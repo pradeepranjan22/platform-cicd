@@ -1,8 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  name: application-ci-run-07
-
+  name: application-ci-run-23
 spec:
   pipelineRef:
     name: application-ci
@@ -16,6 +15,12 @@ spec:
 
     - name: maven-goals
       value: "clean package"
+
+    - name: image-repository
+      value: docker.io/pradeepranjan22/cicd-sample-java-app
+
+  taskRunTemplate:
+    serviceAccountName: pipeline
 
   workspaces:
     - name: shared-workspace

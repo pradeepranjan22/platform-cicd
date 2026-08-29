@@ -2,6 +2,7 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: git-clone
+
 spec:
   params:
     - name: url
@@ -17,6 +18,10 @@ spec:
     - name: output
       description: Workspace where the repository will be cloned
 
+  results:
+    - name: commit
+      description: Git commit SHA checked out by this Task
+
   steps:
     - name: clone
       image: alpine/git:2.47.2
@@ -24,5 +29,24 @@ spec:
         #!/bin/sh
         set -eu
 
+        echo "========================================"
+        echo "Git Clone"
+        echo "========================================"
+
         rm -rf $(workspaces.output.path)/*
-        git clone --branch "$(params.revision)" "$(params.url)" "$(workspaces.output.path)"
+
+        git clone \
+          --branch "$(params.revision)" \
+          "$(params.url)" \
+          "$(workspaces.output.path)"
+
+        cd "$(workspaces.output.path)"
+
+        COMMIT=$(git rev-parse HEAD)
+
+        echo "Checked out commit:"
+        echo "$COMMIT"
+
+        printf "%s" "$COMMIT" > "$(results.commit.path)"
+
+        echo "Git commit result stored successfully."

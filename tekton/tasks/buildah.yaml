@@ -1,0 +1,77 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: buildah
+
+spec:
+  params:
+    - name: image
+      type: string
+      description: Full target image reference
+
+    - name: dockerfile
+      type: string
+      default: Dockerfile
+
+    - name: context
+      type: string
+      default: "."
+
+  workspaces:
+    - name: source
+      description: Application source and Maven build output
+
+  steps:
+    - name: build-and-push
+      image: quay.io/buildah/stable
+      workingDir: $(workspaces.source.path)
+
+      env:
+        - name: STORAGE_DRIVER
+          value: vfs
+        - name: BUILDAH_ISOLATION
+          value: chroot
+
+      script: |
+        #!/bin/sh
+        set -eu
+
+        echo "========================================"
+        echo "Buildah Container Image Build"
+        echo "========================================"
+
+        echo "Workspace:"
+        pwd
+
+        echo "Files:"
+        ls -la
+
+        echo "Checking Dockerfile..."
+        test -f "$(params.dockerfile)"
+
+        echo "Checking Maven output..."
+        test -f target/sample-java-app-1.0.0.jar
+
+        echo "Target image:"
+        echo "$(params.image)"
+
+        echo "Buildah version:"
+        buildah version
+
+        echo "Building image..."
+
+        buildah bud \
+          --storage-driver=vfs \
+          --isolation=chroot \
+          -f "$(params.dockerfile)" \
+          -t "$(params.image)" \
+          "$(params.context)"
+
+        echo "Pushing image..."
+
+        buildah push \
+          "$(params.image)"
+
+        echo "========================================"
+        echo "Image build and push completed"
+        echo "========================================"
