@@ -1,0 +1,33 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: application-ci-run-23
+spec:
+  pipelineRef:
+    name: application-ci
+
+  params:
+    - name: repo-url
+      value: https://github.com/pradeepranjan22/cicd-sample-java-app.git
+
+    - name: revision
+      value: main
+
+    - name: maven-goals
+      value: "clean package"
+
+    - name: image-repository
+      value: docker.io/pradeepranjan22/cicd-sample-java-app
+
+  taskRunTemplate:
+    serviceAccountName: pipeline
+
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi

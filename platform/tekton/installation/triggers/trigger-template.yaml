@@ -1,0 +1,55 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: application-ci-template
+spec:
+  params:
+    - name: repo-url
+    - name: revision
+
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1
+      kind: PipelineRun
+
+      metadata:
+        generateName: application-ci-run-
+
+      spec:
+        params:
+          - name: repo-url
+            value: $(tt.params.repo-url)
+
+          - name: revision
+            value: $(tt.params.revision)
+
+          - name: maven-goals
+            value: clean package
+
+          - name: image-repository
+            value: docker.io/pradeepranjan22/cicd-sample-java-app
+
+          - name: sonar-project-key
+            value: cicd-sample-java-app
+
+          - name: sonar-host-url
+            value: https://sonarcloud.io
+
+          - name: sonar-organization
+            value: pradeepranjan22
+
+        pipelineRef:
+          name: application-ci
+
+        taskRunTemplate:
+          serviceAccountName: pipeline
+
+        workspaces:
+          - name: shared-workspace
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                storageClassName: gp3
+                resources:
+                  requests:
+                    storage: 1Gi

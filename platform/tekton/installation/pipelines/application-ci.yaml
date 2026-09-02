@@ -1,0 +1,126 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: application-ci
+spec:
+  params:
+    - name: repo-url
+      type: string
+      description: Git repository URL
+    - name: revision
+      type: string
+      default: main
+      description: Git revision
+    - name: maven-goals
+      type: string
+      default: clean package
+    - name: image-repository
+      type: string
+      description: Target image repository
+    - name: sonar-project-key
+      type: string
+      description: SonarQube project key
+    - name: sonar-host-url
+      type: string
+      default: https://sonarcloud.io
+    - name: sonar-organization
+      type: string
+      default: ""
+
+  workspaces:
+    - name: shared-workspace
+
+  tasks:
+    - name: clone
+      taskRef:
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.revision)
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+
+    - name: code-quality
+      runAfter:
+        - clone
+      taskRef:
+        name: sonarqube-analysis
+      params:
+        - name: project-key
+          value: $(params.sonar-project-key)
+        - name: host-url
+          value: $(params.sonar-host-url)
+        - name: organization
+          value: $(params.sonar-organization)
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: dependency-scan
+      runAfter:
+        - clone
+      taskRef:
+        name: trivy-fs-scan
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: secret-scan
+      runAfter:
+        - clone
+      taskRef:
+        name: trivy-secret-scan
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: build
+      runAfter:
+        - code-quality
+        - dependency-scan
+        - secret-scan
+      taskRef:
+        name: maven-build
+      params:
+        - name: goals
+          value: $(params.maven-goals)
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: test
+      runAfter:
+        - build
+      taskRef:
+        name: unit-test
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: build-image
+      runAfter:
+        - test
+      taskRef:
+        name: kaniko
+      params:
+        - name: image
+          value: $(params.image-repository):$(tasks.clone.results.commit)
+        - name: dockerfile
+          value: Dockerfile
+        - name: context
+          value: .
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: image-scan
+      runAfter:
+        - build-image
+      taskRef:
+        name: trivy-image-scan
+      params:
+        - name: image
+          value: $(params.image-repository):$(tasks.clone.results.commit)
