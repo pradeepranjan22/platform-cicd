@@ -1,0 +1,35 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: unit-test
+
+spec:
+  workspaces:
+    - name: source
+      description: Workspace containing application source code
+
+  steps:
+    - name: test
+      image: maven:3.9-eclipse-temurin-21
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/sh
+        set -eu
+
+        echo "========================================"
+        echo "Unit Tests"
+        echo "========================================"
+
+        echo "Workspace:"
+        pwd
+
+        echo "Application files:"
+        ls -la
+
+        echo "Running Maven unit tests..."
+
+        mvn -B test
+
+        echo "========================================"
+        echo "Unit tests completed successfully"
+        echo "========================================"

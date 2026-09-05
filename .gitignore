@@ -5,3 +5,6 @@ terraform.tfstate.*
 *.tfvars.json
 .crash.log
 crash.*.log
+*.tfstate.*
+ci/security/dockerhub-secret.yaml
+secrets.auto.tfvars

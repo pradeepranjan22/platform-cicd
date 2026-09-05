@@ -35,6 +35,7 @@ resource "aws_eks_node_group" "this" {
   node_role_arn   = aws_iam_role.eks_node.arn
   subnet_ids      = aws_subnet.private[*].id
 
+  version        = var.eks_cluster_version
   instance_types = var.node_instance_types
   capacity_type  = "ON_DEMAND"
 
@@ -76,11 +77,41 @@ resource "aws_eks_addon" "coredns" {
 }
 
 resource "aws_eks_addon" "kube_proxy" {
-  cluster_name = aws_eks_cluster.this.name
-  addon_name   = "kube-proxy"
+  cluster_name  = aws_eks_cluster.this.name
+  addon_name    = "kube-proxy"
+  addon_version = var.kube_proxy_version
 
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
 
   depends_on = [aws_eks_node_group.this]
 }
+resource "aws_eks_addon" "pod_identity_agent" {
+  cluster_name = aws_eks_cluster.this.name
+  addon_name   = "eks-pod-identity-agent"
+
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  depends_on = [aws_eks_node_group.this]
+}
+
+resource "aws_eks_addon" "ebs_csi" {
+  cluster_name = aws_eks_cluster.this.name
+  addon_name   = "aws-ebs-csi-driver"
+
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  pod_identity_association {
+    role_arn        = aws_iam_role.ebs_csi.arn
+    service_account = "ebs-csi-controller-sa"
+  }
+
+  depends_on = [
+    aws_eks_node_group.this,
+    aws_eks_addon.pod_identity_agent,
+    aws_iam_role_policy_attachment.ebs_csi
+  ]
+}
+

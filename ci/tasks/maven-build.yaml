@@ -18,6 +18,7 @@ spec:
     - name: build
       image: maven:3.9-eclipse-temurin-21
       workingDir: $(workspaces.source.path)
+
       script: |
         #!/bin/sh
         set -eu
@@ -28,17 +29,17 @@ spec:
 
         echo "Workspace:"
         pwd
-        
-        echo " Application files:"
+
+        echo "Application files:"
         ls -la
 
         echo "Checking pom.xml..."
         test -f pom.xml
 
         echo "Running Maven:"
-        echo "mvn $(params.goals)"
+        echo "mvn -B $(params.goals)"
 
-        mvn $(params.goals)
+        mvn -B $(params.goals)
 
         echo "========================================"
         echo "Maven build completed successfully"

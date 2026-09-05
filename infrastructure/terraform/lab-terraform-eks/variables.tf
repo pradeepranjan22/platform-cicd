@@ -37,7 +37,24 @@ variable "private_subnet_cidrs" {
 variable "eks_cluster_version" {
   description = "EKS Kubernetes version"
   type        = string
-  default     = "1.33"
+  default     = "1.34"
+}
+variable "vpc_cni_version" {
+  description = "EKS VPC CNI add-on version"
+  type        = string
+  default     = "v1.22.4-eksbuild.3"
+}
+
+variable "coredns_version" {
+  description = "EKS CoreDNS add-on version"
+  type        = string
+  default     = "v1.12.4-eksbuild.29"
+}
+
+variable "kube_proxy_version" {
+  description = "EKS kube-proxy add-on version"
+  type        = string
+  default     = "v1.34.6-eksbuild.21"
 }
 
 variable "node_instance_types" {
@@ -59,4 +76,16 @@ variable "node_min_size" {
 variable "node_max_size" {
   type    = number
   default = 1
+}
+
+variable "dockerhub_username" {
+  description = "Docker Hub username used by Tekton CI"
+  type        = string
+  sensitive   = true
+}
+
+variable "dockerhub_access_token" {
+  description = "Docker Hub access token used by Tekton CI"
+  type        = string
+  sensitive   = true
 }

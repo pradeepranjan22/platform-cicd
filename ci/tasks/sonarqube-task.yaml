@@ -2,6 +2,7 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: sonarqube-analysis
+
 spec:
   params:
     - name: project-key
@@ -37,7 +38,7 @@ spec:
         set -eu
 
         echo "========================================"
-        echo "SonarQube Analysis"
+        echo "SonarQube / SonarCloud Analysis"
         echo "========================================"
 
         echo "Workspace:"
@@ -62,5 +63,5 @@ spec:
         echo "SonarCloud analysis completed"
         echo "========================================"
 
-        echo "Quality Gate is monitored separately."
-        echo "Continuing CI pipeline..."
+        echo "Analysis succeeded."
+        echo "Quality Gate will be evaluated as a separate CI gate."

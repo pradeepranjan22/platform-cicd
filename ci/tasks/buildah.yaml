@@ -2,6 +2,7 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: buildah
+  namespace: tekton-ci
 
 spec:
   params:
@@ -12,10 +13,22 @@ spec:
     - name: dockerfile
       type: string
       default: Dockerfile
+      description: Path to Dockerfile relative to source workspace
 
     - name: context
       type: string
       default: "."
+      description: Build context relative to source workspace
+
+    - name: artifact
+      type: string
+      default: target/sample-java-app-1.0.0.jar
+      description: Maven application artifact to validate before image build
+
+  results:
+    - name: image-digest
+      type: string
+      description: Digest of the published container image
 
   workspaces:
     - name: source
@@ -29,8 +42,17 @@ spec:
       env:
         - name: STORAGE_DRIVER
           value: vfs
+
         - name: BUILDAH_ISOLATION
           value: chroot
+
+        - name: DOCKER_CONFIG
+          value: /tekton/home/.docker
+
+      volumeMounts:
+        - name: docker-config
+          mountPath: /tekton/home/.docker
+          readOnly: true
 
       script: |
         #!/bin/sh
@@ -50,13 +72,16 @@ spec:
         test -f "$(params.dockerfile)"
 
         echo "Checking Maven output..."
-        test -f target/sample-java-app-1.0.0.jar
+        test -f "$(params.artifact)"
 
         echo "Target image:"
         echo "$(params.image)"
 
         echo "Buildah version:"
         buildah version
+
+        echo "Checking registry credentials..."
+        test -f "$DOCKER_CONFIG/.dockerconfigjson"
 
         echo "Building image..."
 
@@ -72,6 +97,22 @@ spec:
         buildah push \
           "$(params.image)"
 
+        echo "Retrieving image digest..."
+
+        DIGEST="$(buildah inspect --format '{{.Digest}}' "$(params.image)")"
+
+        test -n "$DIGEST"
+
+        echo "Published image digest:"
+        echo "$DIGEST"
+
+        printf "%s" "$DIGEST" > "$(results.image-digest.path)"
+
         echo "========================================"
         echo "Image build and push completed"
         echo "========================================"
+
+  volumes:
+    - name: docker-config
+      secret:
+        secretName: dockerhub-secret

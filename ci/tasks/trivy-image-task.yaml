@@ -2,7 +2,7 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: trivy-image-scan
-  namespace: pradeepranjan18-dev
+
 spec:
   params:
     - name: image
@@ -11,7 +11,8 @@ spec:
 
   steps:
     - name: scan
-      image: aquasec/trivy:latest
+      image: aquasec/trivy:<PINNED-VERSION>
+
       script: |
         #!/bin/sh
         set -eu
@@ -24,8 +25,8 @@ spec:
         echo "$(params.image)"
 
         echo "Policy:"
-        echo "FAIL only on CRITICAL vulnerabilities"
-        echo "HIGH vulnerabilities will be reported but will NOT fail the pipeline"
+        echo "FAIL on CRITICAL vulnerabilities"
+        echo "HIGH vulnerabilities are reported but do not fail the pipeline"
 
         echo "========================================"
         echo "Running Trivy..."

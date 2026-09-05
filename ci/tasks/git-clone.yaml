@@ -19,13 +19,13 @@ spec:
       description: Git commit SHA checked out by this Task
 
   workspaces:
-    - name: output
-      description: Workspace where the repository will be cloned
+    - name: source
+      description: Workspace containing the checked-out source repository
 
   steps:
     - name: clone
       image: alpine/git:2.47.2
-      workingDir: $(workspaces.output.path)
+      workingDir: $(workspaces.source.path)
 
       script: |
         #!/bin/sh
@@ -43,10 +43,8 @@ spec:
 
         REVISION="$(params.revision)"
 
-        # Convert GitHub webhook reference:
-        # refs/heads/main
-        # into:
-        # main
+        # Normalize GitHub webhook branch reference:
+        # refs/heads/main -> main
         case "$REVISION" in
           refs/heads/*)
             REVISION="${REVISION#refs/heads/}"
@@ -58,18 +56,18 @@ spec:
 
         echo "Cleaning workspace..."
 
-        rm -rf "$(workspaces.output.path)"/* \
-               "$(workspaces.output.path)"/.[!.]* \
-               "$(workspaces.output.path)"/..?*
+        rm -rf "$(workspaces.source.path)"/* \
+               "$(workspaces.source.path)"/.[!.]* \
+               "$(workspaces.source.path)"/..?*
 
         echo "Cloning repository..."
 
         git clone \
           --branch "$REVISION" \
           "$(params.url)" \
-          "$(workspaces.output.path)"
+          "$(workspaces.source.path)"
 
-        cd "$(workspaces.output.path)"
+        cd "$(workspaces.source.path)"
 
         echo "========================================"
         echo "Clone completed"

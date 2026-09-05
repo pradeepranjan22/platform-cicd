@@ -19,11 +19,11 @@ variable "eks_cluster_name" {
 variable "tekton_operator_version" {
   description = "Tekton Operator version"
   type        = string
-  default     = "0.81.0"
+  default     = "v0.81.0"
 }
 
-variable "tekton_namespace" {
-  description = "Namespace for Tekton Operator"
+variable "operator_manifest_file" {
+  description = "Path to the pinned Tekton Operator release manifest"
   type        = string
-  default     = "tekton-operator"
+  default     = "manifests/tekton-operator.yaml"
 }

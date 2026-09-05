@@ -68,24 +68,35 @@
         "eks:UpdateClusterConfig",
         "eks:UpdateClusterVersion",
         "eks:DeleteCluster",
+
         "eks:CreateNodegroup",
         "eks:DescribeNodegroup",
         "eks:ListNodegroups",
         "eks:UpdateNodegroupConfig",
         "eks:UpdateNodegroupVersion",
         "eks:DeleteNodegroup",
+
         "eks:TagResource",
         "eks:UntagResource",
         "eks:ListTagsForResource",
+
         "eks:AccessKubernetesApi",
+
         "eks:DescribeAddon",
         "eks:DescribeAddonVersions",
+        "eks:DescribeAddonConfiguration",
         "eks:ListAddons",
         "eks:CreateAddon",
         "eks:UpdateAddon",
         "eks:DeleteAddon",
+
         "eks:DescribeUpdate",
-        "eks:ListUpdates"
+        "eks:ListUpdates",
+
+        "eks:CreatePodIdentityAssociation",
+        "eks:DeletePodIdentityAssociation",
+        "eks:DescribePodIdentityAssociation",
+        "eks:ListPodIdentityAssociations"
       ],
       "Resource": "*"
     },
