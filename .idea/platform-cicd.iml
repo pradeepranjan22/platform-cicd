@@ -4,9 +4,10 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/credit-lab/.terraform" />
-      <excludeFolder url="file://$MODULE_DIR$/infrastructure/terraform/lab-terraform-eks/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/infrastructure/terraform/tekton-platform/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/infrastructure/terraform/tekton-platform/config/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/argocd-platform/install/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/infrastructure/lab-terraform-eks/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/tekton-platform/operator/.terraform" />
     </content>
     <orderEntry type="inheritedJdk" />
