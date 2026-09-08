@@ -16,7 +16,7 @@ spec:
 
   steps:
     - name: scan
-      image: aquasec/trivy:<PINNED-VERSION>
+      image: aquasec/trivy:0.74.0
       workingDir: $(workspaces.source.path)
 
       script: |
