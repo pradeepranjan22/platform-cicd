@@ -4,19 +4,21 @@ metadata:
   name: platform
   namespace: argocd
 spec:
-  description: Platform engineering GitOps project
+  description: Platform engineering resources managed by Argo CD
 
   sourceRepos:
-    - https://github.com/<GITHUB_ORG>/*
+    - https://github.com/pradeepranjan22/platform-cicd.git
 
   destinations:
-    - namespace: '*'
+    - namespace: tekton-platform
       server: https://kubernetes.default.svc
 
   clusterResourceWhitelist:
-    - group: '*'
-      kind: '*'
+    - group: ""
+      kind: Namespace
 
   namespaceResourceWhitelist:
-    - group: '*'
-      kind: '*'
+    - group: tekton.dev
+      kind: Task
+    - group: tekton.dev
+      kind: Pipeline
