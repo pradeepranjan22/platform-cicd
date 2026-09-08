@@ -1,9 +1,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: tekton-ci
-
 resources:
+  - namespace.yaml
   - tasks/git-clone.yaml
   - tasks/maven-build.yaml
   - tasks/unit-test.yaml
@@ -12,4 +11,4 @@ resources:
   - tasks/trivy-secret-task.yaml
   - tasks/trivy-image-task.yaml
   - tasks/buildah.yaml
-  - pipeline/ci-pipeline.yaml
+  - pipeline/java-maven-build.yaml

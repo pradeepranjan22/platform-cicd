@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-  name: application-ci
+  name: java-maven-build
 spec:
   params:
     - name: repo-url
@@ -40,7 +40,7 @@ spec:
         - name: revision
           value: $(params.revision)
       workspaces:
-        - name: output
+        - name: source
           workspace: shared-workspace
 
     - name: code-quality

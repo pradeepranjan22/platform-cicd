@@ -2,7 +2,6 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: buildah
-  namespace: tekton-ci
 
 spec:
   params:
@@ -20,10 +19,6 @@ spec:
       default: "."
       description: Build context relative to source workspace
 
-    - name: artifact
-      type: string
-      default: target/sample-java-app-1.0.0.jar
-      description: Maven application artifact to validate before image build
 
   results:
     - name: image-digest
@@ -70,9 +65,6 @@ spec:
 
         echo "Checking Dockerfile..."
         test -f "$(params.dockerfile)"
-
-        echo "Checking Maven output..."
-        test -f "$(params.artifact)"
 
         echo "Target image:"
         echo "$(params.image)"

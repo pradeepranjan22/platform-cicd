@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tekton-platform
+  labels:
+    platform.cicd/managed-by: argocd
+    platform.cicd/component: ci-catalog
