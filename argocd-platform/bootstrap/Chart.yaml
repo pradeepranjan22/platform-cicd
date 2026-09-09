@@ -1,0 +1,5 @@
+apiVersion: v2
+name: argocd-bootstrap
+description: Bootstrap Argo CD projects and applications
+type: application
+version: 0.1.0

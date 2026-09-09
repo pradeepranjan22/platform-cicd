@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: argocd
+spec:
+  description: Platform engineering resources managed by Argo CD
+
+  sourceRepos:
+    - https://github.com/pradeepranjan22/platform-cicd.git
+
+  destinations:
+    - namespace: tekton-platform
+      server: https://kubernetes.default.svc
+
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+
+  namespaceResourceWhitelist:
+    - group: tekton.dev
+      kind: Task
+    - group: tekton.dev
+      kind: Pipeline
