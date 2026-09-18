@@ -4,11 +4,6 @@ variable "aws_region" {
   default     = "ap-south-1"
 }
 
-variable "aws_profile" {
-  description = "AWS CLI role profile used by Terraform"
-  type        = string
-  default     = "terraform-execution"
-}
 
 variable "project_name" {
   description = "Project/resource name prefix"
