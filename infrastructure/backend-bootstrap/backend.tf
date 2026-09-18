@@ -7,12 +7,4 @@ terraform {
       version = "~> 6.0"
     }
   }
-
-  backend "s3" {
-    bucket       = "<STATE_BUCKET>"
-    key          = "platform/lab-10-12/terraform.tfstate"
-    region       = "ap-south-1"
-    use_lockfile = true
-    encrypt      = true
-  }
 }
