@@ -16,5 +16,9 @@ spec:
     namespace: tekton-platform
 
   syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
     syncOptions:
       - CreateNamespace=false

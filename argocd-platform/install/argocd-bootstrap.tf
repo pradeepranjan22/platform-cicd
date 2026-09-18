@@ -6,6 +6,14 @@ resource "helm_release" "argocd_bootstrap" {
 
   create_namespace = false
 
+  values = [
+    yamlencode({
+      bootstrapChecksum = filesha256(
+        "${path.module}/../bootstrap/templates/platform-ci-catalog.yaml"
+      )
+    })
+  ]
+
   depends_on = [
     helm_release.argocd
   ]
