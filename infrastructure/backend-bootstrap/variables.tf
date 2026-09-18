@@ -4,12 +4,6 @@ variable "aws_region" {
   default     = "ap-south-1"
 }
 
-variable "aws_profile" {
-  description = "AWS CLI profile used by Terraform to create backend resources."
-  type        = string
-  default     = "pranjan"
-}
-
 variable "project_name" {
   description = "Project name used for resource naming and tagging."
   type        = string
