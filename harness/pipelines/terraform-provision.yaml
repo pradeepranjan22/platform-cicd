@@ -3,38 +3,134 @@ pipeline:
   identifier: Lab_1012_Terraform_Provision
   projectIdentifier: Lab_1012_Enterprise_Terraform_IaCM
   orgIdentifier: default
-  tags: {}
+
+  tags:
+    ManagedBy: Git
+    Project: Lab-10-12
+    Purpose: Terraform-IaCM
+
   stages:
+
+    # ============================================================
+    # 1. TERRAFORM PLAN
+    # ============================================================
+
     - stage:
-        name: Terraform Provision
-        identifier: terraform_provision
+        name: Terraform Plan
+        identifier: terraform_plan
         type: IACM
+
         spec:
           workspace: Lab_1012_Terraform_AWS_EKS
+
           platform:
             os: Linux
             arch: Amd64
+
           runtime:
             type: Cloud
             spec: {}
+
           execution:
             steps:
+
               - step:
                   type: IACMTerraformPlugin
-                  name: init
-                  identifier: init
+                  name: Terraform Init
+                  identifier: terraform_init
+
                   spec:
                     command: init
+
               - step:
                   type: IACMTerraformPlugin
-                  name: plan
-                  identifier: plan
+                  name: Terraform Plan
+                  identifier: terraform_plan
+
                   spec:
                     command: plan
+
+        tags: {}
+
+
+    # ============================================================
+    # 2. MANUAL APPROVAL
+    # ============================================================
+
+    - stage:
+        name: Terraform Approval
+        identifier: terraform_approval
+        type: Approval
+
+        spec:
+          execution:
+            steps:
+
+              - step:
+                  type: HarnessApproval
+                  name: Terraform Plan Approval
+                  identifier: terraform_plan_approval
+
+                  spec:
+                    approvalMessage: |
+                      Review the Terraform plan and
+                      IaCM cost estimation before approving
+                      infrastructure provisioning.
+
+                    includePipelineExecutionHistory: true
+
+                    approvers:
+                      userGroups:
+                        - account._account_all_users
+
+                      minimumCount: 1
+
+                      disallowPipelineExecutor: true
+
+                    approverInputs: []
+
+                  timeout: 1d
+
+        tags: {}
+
+
+    # ============================================================
+    # 3. TERRAFORM APPLY
+    # ============================================================
+
+    - stage:
+        name: Terraform Apply
+        identifier: terraform_apply
+        type: IACM
+
+        spec:
+          workspace: Lab_1012_Terraform_AWS_EKS
+
+          platform:
+            os: Linux
+            arch: Amd64
+
+          runtime:
+            type: Cloud
+            spec: {}
+
+          execution:
+            steps:
+
               - step:
                   type: IACMTerraformPlugin
-                  name: apply
-                  identifier: apply
+                  name: Terraform Init
+                  identifier: terraform_init
+
+                  spec:
+                    command: init
+
+              - step:
+                  type: IACMTerraformPlugin
+                  name: Terraform Apply
+                  identifier: terraform_apply
+
                   spec:
                     command: apply
+
         tags: {}
