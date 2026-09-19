@@ -22,8 +22,3 @@ variable "state_bucket_prefix" {
   default     = "pranjan-terraform-state"
 }
 
-variable "terraform_execution_role_name" {
-  description = "IAM role name used by Terraform for AWS infrastructure provisioning."
-  type        = string
-  default     = "terraform-execution-role"
-}

@@ -9,6 +9,7 @@
       <excludeFolder url="file://$MODULE_DIR$/argocd-platform/install/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/infrastructure/lab-terraform-eks/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/tekton-platform/operator/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/infrastructure/backend-bootstrap/.terraform" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
