@@ -1,0 +1,90 @@
+pipeline:
+  name: Terraform Destroy Infrastructure
+  identifier: Terraform_Destroy_Infrastructure
+  projectIdentifier: Lab_1012_Enterprise_Terraform_IaCM
+  orgIdentifier: default
+  tags:
+    ManagedBy: Git
+    Project: Lab-10-12
+    Purpose: Terraform-Destroy
+  stages:
+    - stage:
+        name: Terraform Destroy Plan
+        identifier: terraform_destroy_plan
+        type: IACM
+        spec:
+          workspace: Lab_1012_Terraform_AWS_EKS
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: IACMTerraformPlugin
+                  name: Terraform Init
+                  identifier: terraform_init
+                  spec:
+                    command: init
+              - step:
+                  type: IACMTerraformPlugin
+                  name: Terraform Destroy Plan
+                  identifier: terraform_destroy_plan
+                  spec:
+                    command: plan-destroy
+        tags: {}
+    - stage:
+        name: Terraform Destroy Approval
+        identifier: terraform_destroy_approval
+        type: Approval
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: HarnessApproval
+                  name: Destroy Approval
+                  identifier: destroy_approval
+                  spec:
+                    approvalMessage: |
+                      Review the Terraform destroy plan carefully.
+
+                      Approval will authorize destruction of
+                      infrastructure managed by this workspace.
+                    includePipelineExecutionHistory: true
+                    approvers:
+                      userGroups:
+                        - account._account_all_users
+                      minimumCount: 1
+                      disallowPipelineExecutor: true
+                    approverInputs: []
+                  timeout: 1d
+        tags: {}
+    - stage:
+        name: Terraform Destroy
+        identifier: terraform_destroy
+        type: IACM
+        spec:
+          workspace: Lab_1012_Terraform_AWS_EKS
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: IACMTerraformPlugin
+                  name: Terraform Init
+                  identifier: terraform_init
+                  spec:
+                    command: init
+              - step:
+                  type: IACMTerraformPlugin
+                  name: Terraform Destroy
+                  identifier: terraform_destroy
+                  spec:
+                    command: destroy
+        tags: {}
