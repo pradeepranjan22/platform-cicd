@@ -1,0 +1,135 @@
+template:
+  name: Enterprise Terraform Pipeline
+  identifier: Enterprise_Terraform_Pipeline
+  versionLabel: "1.0"
+
+  type: Pipeline
+
+  projectIdentifier: Lab_1012_Enterprise_Terraform_IaCM
+  orgIdentifier: default
+
+  tags:
+    ManagedBy: Git
+    Purpose: Enterprise-Terraform
+
+  spec:
+    properties:
+      ci:
+        codebase:
+          connectorRef: GitHub_platformcicd
+          repoName: platform-cicd
+          build:
+            type: branch
+            spec:
+              branch: main
+
+    stages:
+
+      - stage:
+          name: Terraform Plan
+          identifier: terraform_plan
+          type: IACM
+
+          spec:
+            workspace: Lab_1012_Terraform_AWS_EKS
+
+            platform:
+              os: Linux
+              arch: Amd64
+
+            runtime:
+              type: Cloud
+              spec: {}
+
+            execution:
+              steps:
+
+                - step:
+                    type: IACMTerraformPlugin
+                    name: Terraform Init
+                    identifier: terraform_init
+
+                    spec:
+                      command: init
+
+                - step:
+                    type: IACMTerraformPlugin
+                    name: Terraform Plan
+                    identifier: terraform_plan
+
+                    spec:
+                      command: plan
+
+          tags: {}
+
+      - stage:
+          name: Terraform Approval
+          identifier: terraform_approval
+          type: Approval
+
+          spec:
+            execution:
+              steps:
+
+                - step:
+                    type: HarnessApproval
+                    name: Terraform Plan Approval
+                    identifier: terraform_plan_approval
+
+                    spec:
+                      approvalMessage: |
+                        Review the Terraform plan and
+                        approve the infrastructure change.
+
+                      includePipelineExecutionHistory: true
+
+                      approvers:
+                        userGroups:
+                          - account._account_all_users
+
+                        minimumCount: 1
+
+                        disallowPipelineExecutor: true
+
+                      approverInputs: []
+
+                    timeout: 1d
+
+          tags: {}
+
+      - stage:
+          name: Terraform Apply
+          identifier: terraform_apply
+          type: IACM
+
+          spec:
+            workspace: Lab_1012_Terraform_AWS_EKS
+
+            platform:
+              os: Linux
+              arch: Amd64
+
+            runtime:
+              type: Cloud
+              spec: {}
+
+            execution:
+              steps:
+
+                - step:
+                    type: IACMTerraformPlugin
+                    name: Terraform Init
+                    identifier: terraform_init
+
+                    spec:
+                      command: init
+
+                - step:
+                    type: IACMTerraformPlugin
+                    name: Terraform Apply
+                    identifier: terraform_apply
+
+                    spec:
+                      command: apply
+
+          tags: {}

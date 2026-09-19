@@ -1,22 +1,22 @@
 pipeline:
-  name: Lab 10.12 - Terraform Provision
-  identifier: Lab_1012_Terraform_Provision
+  name: Lab 10.12 - Terraform Destroy
+  identifier: Lab_1012_Terraform_Destroy
   projectIdentifier: Lab_1012_Enterprise_Terraform_IaCM
   orgIdentifier: default
 
   tags:
     ManagedBy: Git
     Project: Lab-10-12
-    Purpose: Terraform-IaCM
+    Purpose: Terraform-Destroy
 
   stages:
 
     # ============================================================
-    # STAGE 1 - TERRAFORM PLAN
+    # STAGE 1 - TERRAFORM DESTROY PLAN
     # ============================================================
     - stage:
-        name: Terraform Plan
-        identifier: terraform_plan
+        name: Terraform Destroy Plan
+        identifier: terraform_destroy_plan
         type: IACM
 
         spec:
@@ -32,7 +32,6 @@ pipeline:
 
           execution:
             steps:
-
               - step:
                   type: IACMTerraformPlugin
                   name: Terraform Init
@@ -42,20 +41,20 @@ pipeline:
 
               - step:
                   type: IACMTerraformPlugin
-                  name: Terraform Plan
-                  identifier: terraform_plan
+                  name: Terraform Destroy Plan
+                  identifier: terraform_destroy_plan
                   spec:
-                    command: plan
+                    command: plan-destroy
 
         tags: {}
 
 
     # ============================================================
-    # STAGE 2 - MANUAL APPROVAL
+    # STAGE 2 - DESTROY APPROVAL
     # ============================================================
     - stage:
-        name: Terraform Approval
-        identifier: terraform_approval
+        name: Terraform Destroy Approval
+        identifier: terraform_destroy_approval
         type: Approval
 
         spec:
@@ -63,13 +62,14 @@ pipeline:
             steps:
               - step:
                   type: HarnessApproval
-                  name: Terraform Plan Approval
-                  identifier: terraform_plan_approval
+                  name: Destroy Approval
+                  identifier: destroy_approval
 
                   spec:
                     approvalMessage: |
-                      Review the Terraform plan and cost estimation
-                      before approving infrastructure changes.
+                      Review the Terraform destroy plan carefully.
+                      Approval will authorize destruction of the
+                      infrastructure managed by this workspace.
 
                     includePipelineExecutionHistory: true
 
@@ -89,11 +89,11 @@ pipeline:
 
 
     # ============================================================
-    # STAGE 3 - TERRAFORM APPLY
+    # STAGE 3 - TERRAFORM DESTROY
     # ============================================================
     - stage:
-        name: Terraform Apply
-        identifier: terraform_apply
+        name: Terraform Destroy
+        identifier: terraform_destroy
         type: IACM
 
         spec:
@@ -109,7 +109,6 @@ pipeline:
 
           execution:
             steps:
-
               - step:
                   type: IACMTerraformPlugin
                   name: Terraform Init
@@ -119,9 +118,9 @@ pipeline:
 
               - step:
                   type: IACMTerraformPlugin
-                  name: Terraform Apply
-                  identifier: terraform_apply
+                  name: Terraform Destroy
+                  identifier: terraform_destroy
                   spec:
-                    command: apply
+                    command: destroy
 
         tags: {}

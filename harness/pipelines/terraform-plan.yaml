@@ -1,0 +1,45 @@
+pipeline:
+  name: Lab 10.12 - Terraform Plan
+  identifier: Lab_1012_Terraform_Plan
+  projectIdentifier: Lab_1012_Enterprise_Terraform_IaCM
+  orgIdentifier: default
+
+  tags:
+    ManagedBy: Git
+    Project: Lab-10-12
+    Purpose: Terraform-Plan
+
+  stages:
+    - stage:
+        name: Terraform Plan
+        identifier: terraform_plan
+        type: IACM
+
+        spec:
+          workspace: Lab_1012_Terraform_AWS_EKS
+
+          platform:
+            os: Linux
+            arch: Amd64
+
+          runtime:
+            type: Cloud
+            spec: {}
+
+          execution:
+            steps:
+              - step:
+                  type: IACMTerraformPlugin
+                  name: Terraform Init
+                  identifier: terraform_init
+                  spec:
+                    command: init
+
+              - step:
+                  type: IACMTerraformPlugin
+                  name: Terraform Plan
+                  identifier: terraform_plan
+                  spec:
+                    command: plan
+
+        tags: {}
