@@ -1,6 +1,6 @@
 pipeline:
   name: Terraform Destroy Infrastructure
-  identifier: Lab_1012_Terraform_Destroy
+  identifier: Terraform_Destroy_Infrastructure
   projectIdentifier: Lab_1012_Enterprise_Terraform_IaCM
   orgIdentifier: default
   tags:
