@@ -1,0 +1,22 @@
+---
+calico_version: "v3.33.0"
+
+calico_pod_cidr: "10.244.0.0/16"
+
+calico_encapsulation: "VXLANCrossSubnet"
+
+calico_nat_outgoing: "Enabled"
+
+calico_bgp: "Disabled"
+
+calico_install_dir: "/opt/calico"
+
+calico_operator_manifest_url: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/tigera-operator.yaml"
+
+calico_crd_manifest_url: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/v3_projectcalico_org-v1beta1.yaml"
+
+calico_operator_manifest: "{{ calico_install_dir }}/tigera-operator.yaml"
+
+calico_crd_manifest: "{{ calico_install_dir }}/calico-crds.yaml"
+
+calico_installation_manifest: "{{ calico_install_dir }}/installation.yaml"

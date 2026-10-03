@@ -1,0 +1,32 @@
+configuration:
+  backupStorageLocation:
+    - name: default
+      provider: aws
+      bucket: REPLACE_WITH_VELERO_BUCKET
+      config:
+        region: ap-south-1
+
+  volumeSnapshotLocation:
+    - name: default
+      provider: aws
+      config:
+        region: ap-south-1
+
+credentials:
+  useSecret: false
+
+deployNodeAgent: true
+
+nodeAgent:
+  podVolumePath: /var/lib/kubelet/pods
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+metrics:
+  enabled: true

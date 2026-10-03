@@ -1,0 +1,342 @@
+---
+# ============================================================
+# Phase 03 - Kubernetes Control Plane Bootstrap
+# Role: kubernetes-control-plane
+#
+# Purpose:
+#   Bootstrap the primary Kubernetes control-plane node
+#   using kubeadm.
+#
+# Responsibilities:
+#   1. Verify containerd and Kubernetes prerequisites
+#   2. Generate kubeadm configuration
+#   3. Validate kubeadm configuration
+#   4. Initialize CP01
+#   5. Configure kubectl access
+#   6. Verify Kubernetes API health
+#
+# NOTE:
+#   This task file initializes only the PRIMARY control-plane
+#   node (CP01). CP02 control-plane join and worker join will
+#   be handled separately.
+# ============================================================
+
+
+# ------------------------------------------------------------
+# TASK 01
+# Verify containerd
+#
+# Why:
+# Kubernetes uses containerd as the container runtime.
+# kubeadm/kubelet cannot successfully operate if containerd
+# is stopped or disabled.
+# ------------------------------------------------------------
+
+- name: "TASK 01 - Ensure containerd is running and enabled"
+  ansible.builtin.systemd:
+    name: containerd
+    state: started
+    enabled: true
+
+
+# ------------------------------------------------------------
+# TASK 02
+# Verify kubeadm installation
+#
+# Why:
+# kubeadm is responsible for bootstrapping the Kubernetes
+# control plane.
+#
+# changed_when: false
+#   This is only a validation command and does not modify
+#   the system.
+# ------------------------------------------------------------
+
+- name: "TASK 02 - Verify kubeadm is installed"
+  ansible.builtin.command:
+    cmd: kubeadm version -o short
+  register: kubeadm_version_output
+  changed_when: false
+
+
+# ------------------------------------------------------------
+# TASK 03
+# Display kubeadm version
+#
+# Why:
+# Kubernetes components should use the expected version.
+# This helps detect version mismatch before bootstrap.
+# ------------------------------------------------------------
+
+- name: "TASK 03 - Display kubeadm version"
+  ansible.builtin.debug:
+    msg: "kubeadm version: {{ kubeadm_version_output.stdout }}"
+
+
+# ------------------------------------------------------------
+# TASK 04
+# Verify containerd CRI socket
+#
+# Why:
+# kubeadm and kubelet need to communicate with containerd
+# through the CRI socket.
+#
+# Expected:
+#   /run/containerd/containerd.sock
+# ------------------------------------------------------------
+
+- name: "TASK 04 - Check containerd CRI socket"
+  ansible.builtin.stat:
+    path: /run/containerd/containerd.sock
+  register: containerd_socket
+
+
+# ------------------------------------------------------------
+# TASK 05
+# Fail if CRI socket is missing
+#
+# Why:
+# A running containerd service alone is not sufficient.
+# Kubernetes must be able to access its CRI socket.
+# ------------------------------------------------------------
+
+- name: "TASK 05 - Validate containerd CRI socket exists"
+  ansible.builtin.assert:
+    that:
+      - containerd_socket.stat.exists
+    fail_msg: >
+      Containerd CRI socket is missing:
+      /run/containerd/containerd.sock
+
+
+# ------------------------------------------------------------
+# TASK 06
+# Create Kubernetes configuration directory
+#
+# Why:
+# kubeadm configuration and Kubernetes PKI/configuration
+# files are stored under /etc/kubernetes.
+# ------------------------------------------------------------
+
+- name: "TASK 06 - Create Kubernetes configuration directory"
+  ansible.builtin.file:
+    path: /etc/kubernetes
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+
+# ------------------------------------------------------------
+# TASK 07
+# Generate kubeadm configuration
+#
+# Why:
+# Instead of manually creating kubeadm-config.yaml,
+# Ansible generates it from the Jinja2 template.
+#
+# Important:
+#   advertiseAddress = node's own IP
+#   controlPlaneEndpoint = stable Kubernetes API endpoint
+#
+# Example:
+#
+#   advertiseAddress: 10.0.1.207
+#   controlPlaneEndpoint: api.k8s.internal:6443
+# ------------------------------------------------------------
+
+- name: "TASK 07 - Generate kubeadm configuration"
+  ansible.builtin.template:
+    src: kubeadm-config.yaml.j2
+    dest: /etc/kubernetes/kubeadm-config.yaml
+    owner: root
+    group: root
+    mode: "0600"
+  when: inventory_hostname == groups['k8s_control_plane'][0]
+
+
+# ------------------------------------------------------------
+# TASK 08
+# Validate kubeadm configuration
+#
+# Why:
+# Catch invalid kubeadm API versions, fields, networking
+# configuration or other configuration errors BEFORE running
+# kubeadm init.
+#
+# This is particularly important because kubeadm v1beta4
+# has strict configuration structure requirements.
+# ------------------------------------------------------------
+
+- name: "TASK 08 - Validate kubeadm configuration"
+  ansible.builtin.command:
+    cmd: >
+      kubeadm config validate
+      --config /etc/kubernetes/kubeadm-config.yaml
+  register: kubeadm_config_validation
+  changed_when: false
+  when: inventory_hostname == groups['k8s_control_plane'][0]
+
+
+# ------------------------------------------------------------
+# TASK 09
+# Check whether CP01 is already initialized
+#
+# Why:
+# Make the role idempotent.
+#
+# /etc/kubernetes/admin.conf is created by kubeadm after
+# successful control-plane initialization.
+#
+# If the file exists, Ansible will NOT execute kubeadm init
+# again.
+# ------------------------------------------------------------
+
+- name: "TASK 09 - Check whether primary control plane is already initialized"
+  ansible.builtin.stat:
+    path: /etc/kubernetes/admin.conf
+  register: kubeadm_admin_conf
+  when: inventory_hostname == groups['k8s_control_plane'][0]
+
+
+# ------------------------------------------------------------
+# TASK 10
+# Initialize CP01
+#
+# Why:
+# kubeadm init creates the Kubernetes control plane:
+#
+#   - kube-apiserver
+#   - kube-controller-manager
+#   - kube-scheduler
+#   - etcd
+#   - Kubernetes PKI
+#   - admin kubeconfig
+#   - bootstrap token
+#
+# --upload-certs:
+#   Uploads control-plane certificates to the cluster so
+#   another control-plane node can subsequently join.
+# ------------------------------------------------------------
+
+- name: "TASK 10 - Initialize primary Kubernetes control plane"
+  ansible.builtin.command:
+    cmd: >
+      kubeadm init
+      --config /etc/kubernetes/kubeadm-config.yaml
+      --upload-certs
+  register: kubeadm_init
+  when:
+    - inventory_hostname == groups['k8s_control_plane'][0]
+    - not kubeadm_admin_conf.stat.exists
+
+
+# ------------------------------------------------------------
+# TASK 11
+# Create user's kubeconfig directory
+#
+# Why:
+# kubectl normally looks for:
+#
+#   ~/.kube/config
+#
+# kubeadm creates the administrative kubeconfig at:
+#
+#   /etc/kubernetes/admin.conf
+#
+# This task prepares the user's ~/.kube directory.
+# ------------------------------------------------------------
+
+- name: "TASK 11 - Create user kubeconfig directory"
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.kube"
+    state: directory
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_id }}"
+    mode: "0755"
+  when:
+    - inventory_hostname == groups['k8s_control_plane'][0]
+    - kubeadm_init is changed
+
+
+# ------------------------------------------------------------
+# TASK 12
+# Copy admin.conf to user's kubeconfig
+#
+# Why:
+# Allows the Linux user running kubectl to communicate with
+# the Kubernetes API without specifying:
+#
+#   --kubeconfig=/etc/kubernetes/admin.conf
+#
+# After this task:
+#
+#   kubectl get nodes
+#
+# will use ~/.kube/config.
+# ------------------------------------------------------------
+
+- name: "TASK 12 - Configure kubectl access for the current user"
+  ansible.builtin.copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "{{ ansible_env.HOME }}/.kube/config"
+    remote_src: true
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_id }}"
+    mode: "0600"
+  when:
+    - inventory_hostname == groups['k8s_control_plane'][0]
+    - kubeadm_init is changed
+
+
+# ------------------------------------------------------------
+# TASK 13
+# Wait for Kubernetes API server
+#
+# Why:
+# kubeadm init can finish creating the control-plane
+# components before the API server is fully ready to accept
+# requests.
+#
+# /readyz is Kubernetes' API readiness endpoint.
+#
+# retries = 12
+# delay   = 10 seconds
+#
+# Maximum wait = approximately 120 seconds.
+# ------------------------------------------------------------
+
+- name: "TASK 13 - Wait for Kubernetes API server to become ready"
+  ansible.builtin.command:
+    cmd: >
+      kubectl
+      --kubeconfig=/etc/kubernetes/admin.conf
+      get --raw=/readyz
+  register: kubernetes_ready
+  changed_when: false
+  retries: 12
+  delay: 10
+  until: kubernetes_ready.rc == 0
+  when:
+    - inventory_hostname == groups['k8s_control_plane'][0]
+
+
+# ------------------------------------------------------------
+# TASK 14
+# Display API endpoint
+#
+# Why:
+# Provides a clear execution result showing which stable
+# Kubernetes API endpoint the cluster is using.
+#
+# Example:
+#
+#   Kubernetes API endpoint:
+#   https://api.k8s.internal:6443
+# ------------------------------------------------------------
+
+- name: "TASK 14 - Display Kubernetes API endpoint"
+  ansible.builtin.debug:
+    msg: "Kubernetes API endpoint: https://{{ kubernetes_api_endpoint }}"
+  when:
+    - inventory_hostname == groups['k8s_control_plane'][0]

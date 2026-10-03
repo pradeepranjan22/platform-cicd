@@ -1,0 +1,15 @@
+---
+- name: Gather Kubernetes control plane facts
+  hosts: k8s_control_plane
+  gather_facts: true
+  tasks:
+    - name: Display control plane private IP
+      ansible.builtin.debug:
+        msg: "{{ ansible_facts['default_ipv4']['address'] }}"
+
+- name: Configure Kubernetes API HAProxy
+  hosts: haproxy
+  become: true
+  gather_facts: true
+  roles:
+    - haproxy

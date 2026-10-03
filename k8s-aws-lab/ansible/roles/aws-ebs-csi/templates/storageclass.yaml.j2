@@ -1,0 +1,19 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ ebs_csi_storage_class_name }}
+  labels:
+    app.kubernetes.io/managed-by: ansible
+    platform.k8s.io/component: storage
+
+provisioner: ebs.csi.aws.com
+
+volumeBindingMode: {{ ebs_csi_volume_binding_mode }}
+
+reclaimPolicy: {{ ebs_csi_reclaim_policy }}
+
+allowVolumeExpansion: {{ ebs_csi_allow_volume_expansion | lower }}
+
+parameters:
+  type: {{ ebs_csi_volume_type }}
+  fsType: {{ ebs_csi_fs_type }}

@@ -1,0 +1,8 @@
+---
+- name: Phase 03 - Kubernetes Control Plane Bootstrap
+  hosts: k8s_control_plane
+  become: true
+  gather_facts: true
+
+  roles:
+    - kubernetes-control-plane

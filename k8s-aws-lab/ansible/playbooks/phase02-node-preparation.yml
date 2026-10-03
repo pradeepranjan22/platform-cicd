@@ -1,0 +1,10 @@
+---
+- name: Phase 02 - Kubernetes Node Preparation
+  hosts: k8s
+  become: true
+  gather_facts: true
+
+  roles:
+    - common
+    - container-runtime
+    - kubernetes-packages

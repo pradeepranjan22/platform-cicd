@@ -1,0 +1,108 @@
+---
+# Join a new Kubernetes worker node to the existing cluster.
+#
+# Bootstrap/source control plane:
+#   k8s-cp01
+#
+# Target:
+#   k8s_workers_new
+#
+# Required inventory example:
+#   [k8s_workers_new]
+#   k8s-worker02 ansible_host=<IP>
+
+- name: Generate worker join material
+  hosts: k8s-cp01
+  become: true
+  gather_facts: false
+
+  tasks:
+
+    - name: Generate worker join command
+      ansible.builtin.shell:
+        cmd: kubeadm token create --print-join-command
+      register: kubeadm_join_command
+      changed_when: false
+
+    - name: Extract worker token
+      ansible.builtin.set_fact:
+        kubeadm_token: >-
+          {{ kubeadm_join_command.stdout
+             | regex_search('--token ([^ ]+)', '\1')
+             | first }}
+
+    - name: Extract CA discovery hash
+      ansible.builtin.set_fact:
+        kubeadm_ca_hash: >-
+          {{ kubeadm_join_command.stdout
+             | regex_search('sha256:[0-9a-f]+') }}
+
+    - name: Validate worker join material
+      ansible.builtin.assert:
+        that:
+          - kubeadm_token is defined
+          - kubeadm_token | length > 0
+          - kubeadm_ca_hash is defined
+        fail_msg: "Unable to generate valid worker join material."
+        success_msg: "Worker join material generated successfully."
+
+
+- name: Validate and join worker
+  hosts: k8s_workers_new
+  become: true
+  gather_facts: false
+
+  vars:
+    api_endpoint: "api.k8s.internal:6443"
+
+  tasks:
+
+    - name: Verify API endpoint DNS resolution
+      ansible.builtin.command:
+        cmd: getent hosts api.k8s.internal
+      register: api_dns
+      changed_when: false
+
+    - name: Verify Kubernetes API port
+      ansible.builtin.command:
+        cmd: nc -zv api.k8s.internal 6443
+      register: api_port
+      changed_when: false
+
+    - name: Verify Kubernetes API readiness
+      ansible.builtin.command:
+        cmd: curl -k -sSf https://api.k8s.internal:6443/readyz
+      register: api_ready
+      retries: 10
+      delay: 5
+      until: api_ready.rc == 0
+      changed_when: false
+
+    - name: Join worker node to Kubernetes cluster
+      ansible.builtin.command:
+        cmd: >
+          kubeadm join {{ api_endpoint }}
+          --token {{ hostvars['k8s-cp01']['kubeadm_token'] }}
+          --discovery-token-ca-cert-hash {{ hostvars['k8s-cp01']['kubeadm_ca_hash'] }}
+      register: worker_join
+      changed_when: true
+
+    - name: Display kubeadm join result
+      ansible.builtin.debug:
+        var: worker_join.stdout_lines
+
+    - name: Verify kubelet is active
+      ansible.builtin.systemd:
+        name: kubelet
+        state: started
+        enabled: true
+
+    - name: Verify kubelet status
+      ansible.builtin.command:
+        cmd: systemctl is-active kubelet
+      register: kubelet_status
+      changed_when: false
+
+    - name: Display kubelet status
+      ansible.builtin.debug:
+        msg: "Kubelet status: {{ kubelet_status.stdout }}"

@@ -1,0 +1,32 @@
+controller:
+  numExecutors: 0
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "200Mi"
+    limits:
+      cpu: "200m"
+      memory: "400Mi"
+
+  serviceType: ClusterIP
+
+  installPlugins:
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - credentials-binding
+    - configuration-as-code
+    - job-dsl
+    - matrix-auth
+    - prometheus
+
+  JCasC:
+    defaultConfig: true
+
+agent:
+  enabled: true
+  containerCap: 2
+  podRetention: Never
+  idleMinutes: 0
+  workingDir: /home/jenkins/agent

@@ -1,0 +1,18 @@
+---
+common_packages:
+  - ca-certificates
+  - curl
+  - gnupg
+  - apt-transport-https
+  - software-properties-common
+  - socat
+  - conntrack
+  - ipset
+  - iptables
+  - jq
+  - vim
+  - git
+  - net-tools
+  - chrony
+
+disable_swap: true

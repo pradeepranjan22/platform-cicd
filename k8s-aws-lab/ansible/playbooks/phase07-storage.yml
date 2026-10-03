@@ -1,0 +1,9 @@
+---
+- name: Phase 05 - AWS EBS CSI Storage
+  hosts: k8s_control_plane
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: aws-ebs-csi
+      run_once: true

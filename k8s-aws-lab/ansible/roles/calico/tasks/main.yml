@@ -1,0 +1,189 @@
+---
+- name: Create Calico installation directory
+  ansible.builtin.file:
+    path: "{{ calico_install_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download Calico CRD manifest
+  ansible.builtin.get_url:
+    url: "{{ calico_crd_manifest_url }}"
+    dest: "{{ calico_crd_manifest }}"
+    mode: "0644"
+    force: false
+
+- name: Download Tigera Operator manifest
+  ansible.builtin.get_url:
+    url: "{{ calico_operator_manifest_url }}"
+    dest: "{{ calico_operator_manifest }}"
+    mode: "0644"
+    force: false
+
+- name: Check Kubernetes API connectivity
+  ansible.builtin.command:
+    cmd: kubectl get nodes
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: kubectl_nodes
+  changed_when: false
+
+- name: Display current Kubernetes nodes
+  ansible.builtin.debug:
+    var: kubectl_nodes.stdout_lines
+
+- name: Apply Calico CRDs using server-side apply
+  ansible.builtin.command:
+    cmd: kubectl apply --server-side --force-conflicts -f {{ calico_crd_manifest }}
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: calico_crd_apply
+  changed_when: >
+    'created' in calico_crd_apply.stdout or
+    'configured' in calico_crd_apply.stdout or
+    'serverside-applied' in calico_crd_apply.stdout
+
+- name: Apply Tigera Operator
+  ansible.builtin.command:
+    cmd: kubectl apply -f {{ calico_operator_manifest }}
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: tigera_operator_apply
+  changed_when: >
+    'created' in tigera_operator_apply.stdout or
+    'configured' in tigera_operator_apply.stdout
+
+- name: Wait for Tigera Operator deployment
+  ansible.builtin.command:
+    cmd: >
+      kubectl wait
+      --namespace tigera-operator
+      --for=condition=Available
+      deployment/tigera-operator
+      --timeout=300s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
+
+- name: Generate Calico Installation manifest
+  ansible.builtin.template:
+    src: installation.yaml.j2
+    dest: "{{ calico_installation_manifest }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Apply Calico Installation
+  ansible.builtin.command:
+    cmd: kubectl apply -f {{ calico_installation_manifest }}
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: calico_installation_apply
+  changed_when: >
+    'created' in calico_installation_apply.stdout or
+    'configured' in calico_installation_apply.stdout
+
+- name: Wait for Calico system namespace
+  ansible.builtin.command:
+    cmd: kubectl get namespace calico-system
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: calico_namespace
+  retries: 30
+  delay: 10
+  until: calico_namespace.rc == 0
+  changed_when: false
+
+- name: Wait for Calico node daemonset
+  ansible.builtin.command:
+    cmd: >
+      kubectl rollout status
+      daemonset/calico-node
+      --namespace calico-system
+      --timeout=600s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
+
+- name: Wait for Calico controllers
+  ansible.builtin.command:
+    cmd: >
+      kubectl rollout status
+      deployment/calico-kube-controllers
+      --namespace calico-system
+      --timeout=600s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
+
+- name: Wait for all Kubernetes nodes to become Ready
+  ansible.builtin.command:
+    cmd: >
+      kubectl wait
+      --for=condition=Ready
+      nodes
+      --all
+      --timeout=600s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
+
+- name: Wait for CoreDNS rollout
+  ansible.builtin.command:
+    cmd: >
+      kubectl rollout status
+      deployment/coredns
+      --namespace kube-system
+      --timeout=600s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
+
+- name: Display Kubernetes nodes
+  ansible.builtin.command:
+    cmd: kubectl get nodes -o wide
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: final_nodes
+  changed_when: false
+
+- name: Display Calico pods
+  ansible.builtin.command:
+    cmd: kubectl get pods -n calico-system -o wide
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: calico_pods
+  changed_when: false
+
+- name: Display CoreDNS pods
+  ansible.builtin.command:
+    cmd: kubectl get pods -n kube-system -l k8s-app=kube-dns -o wide
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: coredns_pods
+  changed_when: false
+
+- name: Display Calico status
+  ansible.builtin.command:
+    cmd: kubectl get tigerastatus
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: calico_status
+  changed_when: false
+
+- name: Show final Kubernetes node status
+  ansible.builtin.debug:
+    var: final_nodes.stdout_lines
+
+- name: Show Calico pod status
+  ansible.builtin.debug:
+    var: calico_pods.stdout_lines
+
+- name: Show CoreDNS status
+  ansible.builtin.debug:
+    var: coredns_pods.stdout_lines
+
+- name: Show Calico operator status
+  ansible.builtin.debug:
+    var: calico_status.stdout_lines

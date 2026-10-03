@@ -1,0 +1,64 @@
+---
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install common Kubernetes node packages
+  ansible.builtin.apt:
+    name: "{{ common_packages }}"
+    state: present
+
+- name: Disable active swap immediately
+  ansible.builtin.command:
+    cmd: swapoff -a
+  when: disable_swap
+  changed_when: false
+
+- name: Check swap configuration
+  ansible.builtin.shell:
+    cmd: "grep -E '\\sswap\\s' /etc/fstab || true"
+  register: swap_fstab
+  changed_when: false
+
+- name: Disable swap entries in fstab
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^(\s*[^#]\S*\s+\S+\s+swap\s+.*)$'
+    replace: '# \1'
+  when: disable_swap
+
+- name: Load Kubernetes kernel modules
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ kubernetes_kernel_modules }}"
+
+- name: Persist Kubernetes kernel modules
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/k8s.conf
+    mode: "0644"
+    content: |
+      {% for module in kubernetes_kernel_modules %}
+      {{ module }}
+      {% endfor %}
+
+- name: Configure Kubernetes sysctl settings
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/99-kubernetes-cri.conf
+    mode: "0644"
+    content: |
+      {% for key, value in kubernetes_sysctl.items() %}
+      {{ key }} = {{ value }}
+      {% endfor %}
+  notify: Reload sysctl
+
+- name: Enable chrony
+  ansible.builtin.service:
+    name: chrony
+    state: started
+    enabled: true

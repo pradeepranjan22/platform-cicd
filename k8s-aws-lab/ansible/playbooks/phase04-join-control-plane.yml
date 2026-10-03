@@ -1,0 +1,116 @@
+---
+# Join a new Kubernetes control-plane node to the existing cluster.
+#
+# Bootstrap/source control plane:
+#   k8s-cp01
+#
+# Target:
+#   k8s_control_plane_new
+#
+# Required inventory example:
+#   [k8s_control_plane_new]
+#   k8s-cp03 ansible_host=<IP>
+
+- name: Generate control-plane join material
+  hosts: k8s-cp01
+  become: true
+  gather_facts: false
+
+  tasks:
+
+    - name: Generate bootstrap token and CA hash
+      ansible.builtin.shell:
+        cmd: kubeadm token create --print-join-command
+      register: kubeadm_join_command
+      changed_when: false
+
+    - name: Extract CA discovery hash
+      ansible.builtin.set_fact:
+        kubeadm_ca_hash: >-
+          {{ kubeadm_join_command.stdout
+             | regex_search('sha256:[0-9a-f]+') }}
+
+    - name: Upload control-plane certificates
+      ansible.builtin.shell:
+        cmd: kubeadm init phase upload-certs --upload-certs 2>/dev/null
+      register: certificate_upload
+      changed_when: true
+
+    - name: Extract certificate key
+      ansible.builtin.set_fact:
+        kubeadm_certificate_key: >-
+          {{ certificate_upload.stdout_lines
+             | select('match', '^[0-9a-f]{64}$')
+             | list
+             | first }}
+
+    - name: Validate generated certificate key
+      ansible.builtin.assert:
+        that:
+          - kubeadm_certificate_key is defined
+          - kubeadm_certificate_key | length == 64
+        fail_msg: "Unable to obtain a valid kubeadm certificate key."
+        success_msg: "Control-plane certificate key generated successfully."
+
+
+- name: Validate and join new control-plane
+  hosts: k8s_control_plane_new
+  become: true
+  gather_facts: false
+
+  vars:
+    api_endpoint: "api.k8s.internal:6443"
+
+  tasks:
+
+    - name: Verify API endpoint DNS resolution
+      ansible.builtin.command:
+        cmd: getent hosts api.k8s.internal
+      register: api_dns
+      changed_when: false
+
+    - name: Verify Kubernetes API port
+      ansible.builtin.command:
+        cmd: nc -zv api.k8s.internal 6443
+      register: api_port
+      changed_when: false
+
+    - name: Verify Kubernetes API readiness
+      ansible.builtin.command:
+        cmd: curl -k -sSf https://api.k8s.internal:6443/readyz
+      register: api_ready
+      retries: 10
+      delay: 5
+      until: api_ready.rc == 0
+      changed_when: false
+
+    - name: Generate control-plane join command
+      ansible.builtin.command:
+        cmd: >
+          kubeadm join {{ api_endpoint }}
+          --token {{ hostvars['k8s-cp01']['kubeadm_join_command'].stdout | regex_search('--token ([^ ]+)') | regex_replace('--token ', '') }}
+          --discovery-token-ca-cert-hash {{ hostvars['k8s-cp01']['kubeadm_ca_hash'] }}
+          --control-plane
+          --certificate-key {{ hostvars['k8s-cp01']['kubeadm_certificate_key'] }}
+      register: control_plane_join
+      changed_when: true
+
+    - name: Display kubeadm join result
+      ansible.builtin.debug:
+        var: control_plane_join.stdout_lines
+
+    - name: Verify kubelet is active
+      ansible.builtin.systemd:
+        name: kubelet
+        state: started
+        enabled: true
+
+    - name: Verify kubelet status
+      ansible.builtin.command:
+        cmd: systemctl is-active kubelet
+      register: kubelet_status
+      changed_when: false
+
+    - name: Display kubelet status
+      ansible.builtin.debug:
+        msg: "Kubelet status: {{ kubelet_status.stdout }}"

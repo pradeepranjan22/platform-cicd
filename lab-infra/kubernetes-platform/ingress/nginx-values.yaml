@@ -1,0 +1,29 @@
+controller:
+  replicaCount: 2
+
+  ingressClassResource:
+    name: nginx
+    enabled: true
+    default: true
+    controllerValue: "k8s.io/ingress-nginx"
+
+  service:
+    type: LoadBalancer
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  metrics:
+    enabled: true
+
+  admissionWebhooks:
+    enabled: true
+
+  config:
+    use-forwarded-headers: "true"
+    compute-full-forwarded-for: "true"

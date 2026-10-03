@@ -1,0 +1,12 @@
+---
+kubernetes_api_endpoint: "api.k8s.internal:6443"
+
+kubernetes_version: "v1.34.12"
+
+pod_cidr: "10.244.0.0/16"
+
+service_cidr: "10.96.0.0/12"
+
+kubernetes_dns_domain: "cluster.local"
+
+kubernetes_cri_socket: "unix:///run/containerd/containerd.sock"

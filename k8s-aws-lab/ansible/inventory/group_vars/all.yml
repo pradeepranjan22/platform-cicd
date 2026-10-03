@@ -1,0 +1,43 @@
+---
+# Kubernetes version
+kubernetes_minor_version: "v1.34"
+
+# Kubernetes packages
+kubernetes_packages:
+  - kubelet
+  - kubeadm
+  - kubectl
+
+# Container runtime
+container_runtime: containerd
+containerd_config_path: /etc/containerd/config.toml
+containerd_service_name: containerd
+
+# Kubernetes runtime configuration
+containerd_systemd_cgroup: true
+
+# Required kernel modules
+kubernetes_kernel_modules:
+  - overlay
+  - br_netfilter
+
+# Required sysctl settings
+kubernetes_sysctl:
+  net.bridge.bridge-nf-call-iptables: "1"
+  net.bridge.bridge-nf-call-ip6tables: "1"
+  net.ipv4.ip_forward: "1"
+
+# Kubernetes package hold
+hold_kubernetes_packages: true
+
+kubernetes_version: "v1.34.12"
+
+kubernetes_api_endpoint: "api.k8s.internal:6443"
+
+pod_cidr: "10.244.0.0/16"
+
+service_cidr: "10.96.0.0/12"
+
+kubernetes_dns_domain: "cluster.local"
+
+kubernetes_cri_socket: "unix:///run/containerd/containerd.sock"

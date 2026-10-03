@@ -1,0 +1,62 @@
+---
+- name: Phase 04 - Prepare Kubernetes API Server for Calico
+  hosts: k8s_control_plane
+  become: true
+  gather_facts: false
+
+  tasks:
+
+    # 1. Enable the required Kubernetes API feature
+    - name: Enable MutatingAdmissionPolicy feature gate
+      ansible.builtin.lineinfile:
+        path: /etc/kubernetes/manifests/kube-apiserver.yaml
+        regexp: '^\s*-\s*--feature-gates=.*MutatingAdmissionPolicy'
+        insertafter: '^(\s*)-\s*--enable-admission-plugins='
+        line: '    - --feature-gates=MutatingAdmissionPolicy=true'
+        state: present
+
+    # 2. Enable the beta API
+    - name: Enable MutatingAdmissionPolicy v1beta1 API
+      ansible.builtin.lineinfile:
+        path: /etc/kubernetes/manifests/kube-apiserver.yaml
+        regexp: '^\s*-\s*--runtime-config=admissionregistration\.k8s\.io/v1beta1=true'
+        insertafter: '^(\s*)-\s*--feature-gates=MutatingAdmissionPolicy=true'
+        line: '    - --runtime-config=admissionregistration.k8s.io/v1beta1=true'
+        state: present
+
+    # 3. Wait for API server to come back
+    - name: Wait for Kubernetes API server
+      ansible.builtin.command:
+        cmd: kubectl get --raw=/livez
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: apiserver_livez
+      retries: 30
+      delay: 5
+      until: apiserver_livez.rc == 0
+      changed_when: false
+
+    # 4. Verify that the API is actually available
+    - name: Verify MutatingAdmissionPolicy API
+      ansible.builtin.shell:
+        cmd: kubectl api-resources | grep MutatingAdmissionPolicy
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: mutating_admission_policy
+      changed_when: false
+      failed_when: mutating_admission_policy.rc != 0
+
+    # 5. Display verification result
+    - name: Display MutatingAdmissionPolicy support
+      ansible.builtin.debug:
+        var: mutating_admission_policy.stdout
+
+
+- name: Phase 04 - Install and Validate Calico CNI
+  hosts: k8s_control_plane
+  become: true
+  gather_facts: false
+
+  roles:
+    - role: calico
+      run_once: true

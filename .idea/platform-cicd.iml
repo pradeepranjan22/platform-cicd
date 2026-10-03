@@ -10,6 +10,11 @@
       <excludeFolder url="file://$MODULE_DIR$/infrastructure/lab-terraform-eks/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/tekton-platform/operator/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/infrastructure/backend-bootstrap/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/lab-infra/aws-foundation/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/lab-infra/environments/dev/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/lab-infra/kubernetes-platform/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/k8s-aws-lab/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/k8s-aws-lab/terraform/.terraform" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

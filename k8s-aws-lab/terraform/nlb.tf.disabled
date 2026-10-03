@@ -1,0 +1,95 @@
+# ============================================================
+
+# Kubernetes API Internal Network Load Balancer
+
+# ============================================================
+
+resource "aws_lb" "kubernetes_api" {
+  name               = "k8s-api-nlb"
+  internal           = true
+  load_balancer_type = "network"
+
+  security_groups = [
+    aws_security_group.k8s_api_nlb.id
+  ]
+
+  subnets = [
+    aws_subnet.k8s_az1.id,
+    aws_subnet.k8s_az2.id
+  ]
+
+  enable_cross_zone_load_balancing = true
+
+  tags = {
+    Name        = "k8s-api-nlb"
+    Component   = "kubernetes-control-plane"
+    Environment = "lab"
+  }
+}
+
+# ============================================================
+
+# Kubernetes API Target Group
+
+# ============================================================
+
+resource "aws_lb_target_group" "kubernetes_api" {
+  name        = "k8s-api-tg"
+  port        = 6443
+  protocol    = "TCP"
+  target_type = "instance"
+
+  vpc_id = aws_vpc.k8s.id
+
+  health_check {
+    protocol = "TCP"
+    port     = 6443
+  }
+
+  tags = {
+    Name        = "k8s-api-target-group"
+    Component   = "kubernetes-control-plane"
+    Environment = "lab"
+  }
+}
+
+# ============================================================
+
+# CP01 - Kubernetes API Target
+
+# ============================================================
+
+resource "aws_lb_target_group_attachment" "cp01" {
+  target_group_arn = aws_lb_target_group.kubernetes_api.arn
+  target_id        = aws_instance.k8s["k8s-cp1"].id
+  port             = 6443
+}
+
+# ============================================================
+
+# CP02 - Kubernetes API Target
+
+# ============================================================
+
+resource "aws_lb_target_group_attachment" "cp02" {
+  target_group_arn = aws_lb_target_group.kubernetes_api.arn
+  target_id        = aws_instance.k8s["k8s-cp2"].id
+  port             = 6443
+}
+
+# ============================================================
+
+# Kubernetes API Listener
+
+# ============================================================
+
+resource "aws_lb_listener" "kubernetes_api" {
+  load_balancer_arn = aws_lb.kubernetes_api.arn
+  port              = 6443
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.kubernetes_api.arn
+  }
+}

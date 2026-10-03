@@ -1,0 +1,80 @@
+controller:
+
+  # Jenkins controller should orchestrate only.
+  # Builds execute on Kubernetes agents.
+  numExecutors: 0
+
+  serviceType: ClusterIP
+
+  servicePort: 8080
+
+  targetPort: 8080
+
+  admin:
+    username: admin
+    createSecret: true
+
+  jenkinsHome: /var/jenkins_home
+
+  serviceAccount:
+    create: false
+    name: jenkins
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+    limits:
+      cpu: "500m"
+      memory: 512Mi
+
+  installPlugins:
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - github
+    - credentials-binding
+    - configuration-as-code
+    - pipeline-stage-view
+    - junit
+    - timestamper
+    - ws-cleanup
+
+  JCasC:
+    defaultConfig: true
+
+    configScripts:
+
+      jenkins-system:
+        jenkins:
+          systemMessage: |
+            Jenkins CI Platform
+            EKS DevOps Architect Lab
+
+  # Don't continuously update plugins on every restart.
+  initializeOnce: true
+
+  # Persistent Jenkins home
+  persistence:
+    enabled: true
+
+agent:
+
+  enabled: true
+
+  # We'll replace this with our custom image after building it.
+  image: "your-registry/jenkins-ci-agent"
+
+  tag: "1.0.0"
+
+  workingDir: "/home/jenkins/agent"
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 112Mi
+
+    limits:
+      cpu: "100m"
+      memory: 256Mi

@@ -1,0 +1,51 @@
+controller:
+  numExecutors: 0
+
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+
+  serviceType: ClusterIP
+
+  JCasC:
+    defaultConfig: true
+
+  installPlugins:
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - credentials-binding
+    - configuration-as-code
+    - job-dsl
+    - matrix-auth
+    - prometheus
+
+  persistence:
+    enabled: true
+    storageClass: gp3
+    size: 20Gi
+    accessMode: ReadWriteOnce
+
+  probes:
+    startupProbe:
+      failureThreshold: 12
+      periodSeconds: 10
+
+    livenessProbe:
+      failureThreshold: 6
+      periodSeconds: 10
+
+    readinessProbe:
+      failureThreshold: 6
+      periodSeconds: 10
+
+agent:
+  enabled: true
+  containerCap: 5
+  idleMinutes: 0
+  podRetention: Never
+  workingDir: /home/jenkins/agent

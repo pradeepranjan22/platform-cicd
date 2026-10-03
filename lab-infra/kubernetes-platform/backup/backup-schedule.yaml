@@ -1,0 +1,20 @@
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: platform-daily-backup
+  namespace: velero
+spec:
+  schedule: "0 2 * * *"
+
+  template:
+    ttl: 168h
+
+    includedNamespaces:
+      - jenkins
+      - tekton-ci
+      - argocd
+      - observability
+
+    snapshotVolumes: true
+
+    defaultVolumesToFsBackup: true

@@ -1,0 +1,82 @@
+---
+- name: Install Kubernetes repository prerequisites
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - gpg
+    state: present
+    update_cache: true
+
+- name: Ensure Kubernetes keyring directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download Kubernetes repository signing key
+  ansible.builtin.get_url:
+    url: "https://pkgs.k8s.io/core:/stable:/{{ kubernetes_minor_version }}/deb/Release.key"
+    dest: /tmp/kubernetes-release.key
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Convert Kubernetes repository signing key to GPG format
+  ansible.builtin.command:
+    cmd: >
+      gpg --dearmor
+      --yes
+      --output /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      /tmp/kubernetes-release.key
+  changed_when: true
+  when: not ansible_check_mode
+
+- name: Set Kubernetes keyring permissions
+  ansible.builtin.file:
+    path: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    owner: root
+    group: root
+    mode: "0644"
+  when: not ansible_check_mode
+
+- name: Configure Kubernetes APT repository
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/kubernetes.list
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ kubernetes_minor_version }}/deb/ /
+
+- name: Remove old Kubernetes deb822 repository definition
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/kubernetes.sources
+    state: absent
+
+- name: Update APT cache after adding Kubernetes repository
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Install Kubernetes packages
+  ansible.builtin.apt:
+    name: "{{ kubernetes_packages }}"
+    state: present
+  when: not ansible_check_mode
+
+- name: Hold Kubernetes packages
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop: "{{ kubernetes_packages }}"
+  when:
+    - hold_kubernetes_packages | bool
+    - not ansible_check_mode
+
+- name: Enable kubelet
+  ansible.builtin.systemd:
+    name: kubelet
+    enabled: true
+  when: not ansible_check_mode
